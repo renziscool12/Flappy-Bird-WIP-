@@ -22,8 +22,8 @@ public class FlappyBird extends JFrame {
         int x = 100;
         int y = 100;
 
-        int velocity = 0;
-        int gravity = 1;
+        double velocity = 0;
+        double gravity = 0.5;
 
         Timer timer;
 
@@ -38,9 +38,17 @@ public class FlappyBird extends JFrame {
         Clip hitsound;
         Clip dieSound;
 
+        Image birdImage;
+        Image pipeUpImage;
+        Image pipeDownImage;
+        Image backgroundImage;
+
         GamePanel() {
             setFocusable(true); // Make the panel focusable to receive key events
-
+            birdImage = new ImageIcon(getClass().getResource("image/birdgame.png")).getImage();
+            pipeUpImage = new ImageIcon(getClass().getResource("image/pipeupimage.png")).getImage();
+            pipeDownImage = new ImageIcon(getClass().getResource("image/pipedownimage.png")).getImage();
+            backgroundImage = new ImageIcon(getClass().getResource("image/background.png")).getImage();
             addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
@@ -49,7 +57,7 @@ public class FlappyBird extends JFrame {
                         if (!isStarted) {
                             isStarted = true;
                         } else {
-                            velocity = -12; // Move the bird up when space is pressed
+                            velocity = -7; // Move the bird up when space is pressed
                             sounds("sounds/flap.wav"); // Play flap sound (make sure to have the sound file in the
                                                        // correct path)
                         }
@@ -62,6 +70,10 @@ public class FlappyBird extends JFrame {
                     velocity += gravity; // Apply gravity
                     y += velocity; // Update bird's position
                     pipeX -= 5; // Move pipes to the left
+                }
+
+                if (velocity > 10) {
+                    velocity = 10; // Limit the maximum falling speed
                 }
 
                 if (pipeX < -50) {
@@ -109,17 +121,15 @@ public class FlappyBird extends JFrame {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             // Draw background
-            g.setColor(Color.CYAN);
-            g.fillRect(0, 0, getWidth(), getHeight());
+            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
 
             // Draw bird
-            g.setColor(Color.YELLOW);
-            g.fillOval(x, y, 30, 30);
+            g.drawImage(birdImage, x, y, 30, 30, this);
 
             // Draw pipes
-            g.setColor(Color.GREEN);
-            g.fillRect(pipeX, 0, 50, gapY); // Top pipe
-            g.fillRect(pipeX, gapY + gapHeight, 50, getHeight()); // Bottom pipe
+            g.drawImage(pipeUpImage, pipeX, 0, 50, gapY, this); // Top pipe
+            g.drawImage(pipeDownImage, pipeX, gapY + gapHeight, 50, getHeight() - gapY - gapHeight, this); // Bottom
+                                                                                                           // pipe
 
             // Draw start message
             if (!isStarted) {
