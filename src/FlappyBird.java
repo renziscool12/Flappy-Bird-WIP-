@@ -52,6 +52,7 @@ public class FlappyBird extends JFrame {
 
             pipes.add(new Pipe(400, 200)); // Add an initial pipe to the game
 
+            // Key listener to handle bird movement
             addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
@@ -68,6 +69,7 @@ public class FlappyBird extends JFrame {
                 }
             });
 
+            // Game loop using a timer
             timer = new Timer(25, e -> {
                 if (!isStarted) { // Start the game loop only after the first space press
                     repaint();
@@ -151,6 +153,7 @@ public class FlappyBird extends JFrame {
                 g.setFont(new Font("Arial", Font.BOLD, 24));
                 g.drawString("Press SPACE to Start", 80, getHeight() / 2);
             }
+            // Draw score
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 18));
             g.drawString("Score: " + score, 10, 30);
