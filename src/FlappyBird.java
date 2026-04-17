@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class FlappyBird extends JFrame {
     FlappyBird() {
@@ -19,17 +20,14 @@ public class FlappyBird extends JFrame {
     }
 
     class GamePanel extends JPanel {
-        int x = 100;
-        int y = 100;
+        int x = 100; // Horizontal position of the bird
+        int y = 100; // Vertical position of the bird
 
-        double velocity = 0;
-        double gravity = 0.5;
+        double velocity = 0; // Vertical velocity of the bird
+        double gravity = 0.5; // Gravity effect on the bird
 
         Timer timer;
-
-        int pipeX = 300;
-        int gapY = 200;
-        int gapHeight = 150;
+        int gapHeight = 100; // Height of the gap between pipes
 
         boolean isStarted = false;
         boolean passedPipe = false;
@@ -43,12 +41,17 @@ public class FlappyBird extends JFrame {
         Image pipeDownImage;
         Image backgroundImage;
 
+        ArrayList<Pipe> pipes = new ArrayList<>();
+
         GamePanel() {
             setFocusable(true); // Make the panel focusable to receive key events
             birdImage = new ImageIcon(getClass().getResource("image/birdgame.png")).getImage();
             pipeUpImage = new ImageIcon(getClass().getResource("image/pipeupimage.png")).getImage();
             pipeDownImage = new ImageIcon(getClass().getResource("image/pipedownimage.png")).getImage();
             backgroundImage = new ImageIcon(getClass().getResource("image/background.png")).getImage();
+
+            pipes.add(new Pipe(400, 200)); // Add an initial pipe to the game
+
             addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
@@ -66,42 +69,52 @@ public class FlappyBird extends JFrame {
             });
 
             timer = new Timer(25, e -> {
-                if (isStarted) { // Start the game loop only after the first space press
-                    velocity += gravity; // Apply gravity
-                    y += velocity; // Update bird's position
-                    pipeX -= 5; // Move pipes to the left
+                if (!isStarted) { // Start the game loop only after the first space press
+                    repaint();
+                    return;
                 }
 
+                velocity += gravity; // Apply gravity
+                y += velocity; // Update bird's position
+
+                // Limit the falling speed of the bird
                 if (velocity > 10) {
                     velocity = 10; // Limit the maximum falling speed
                 }
 
-                if (pipeX < -50) {
-                    pipeX = getWidth();
-                    gapY = (int) (Math.random() * (getHeight() - gapHeight - 100) + 50);
+                for (Pipe p : pipes) {
+                    p.x -= 5; // Move each pipe to the left
+                }
+                if (!pipes.isEmpty() && pipes.get(pipes.size() - 1).x < 200) { // Check if the pipe is close to the bird
+                    int gapY = (int) (Math.random() * 200) + 100; // Randomize the gap's vertical position
+                    pipes.add(new Pipe(400, gapY)); // Add a new pipe when the last one is close to the left edge
+
                 }
 
-                if (pipeX + 50 < x && !passedPipe) {
-                    sounds("sounds/point.wav"); // Play point sound (make sure to have the sound file in the
-                                                // correct path)
-                    score++; // Increment score when the bird successfully passes a pipe
-                    passedPipe = true;
-                }
+                pipes.removeIf(p -> p.x < -50); // Remove pipes that have moved off the screen
 
-                if (pipeX >= x) {
-                    passedPipe = false; // Reset passedPipe for the next pipe
+                // Check if the bird has passed a pipe and update the score
+                for (Pipe p : pipes) {
+                    if (!p.isPassed && p.x + 50 < x) { // Check if the pipe has been passed
+                        score++; // Increment score
+                        p.isPassed = true; // Mark the pipe as passed
+                        sounds("sounds/point.wav");
+                    }
                 }
 
                 Rectangle bird = new Rectangle(x, y, 30, 30);
-                Rectangle topPipe = new Rectangle(pipeX, 0, 50, gapY);
-                Rectangle bottomPipe = new Rectangle(pipeX, gapY + gapHeight, 50, getHeight());
+                // Check for collisions with pipes
+                for (Pipe p : pipes) {
+                    Rectangle topPipe = new Rectangle(p.x, 0, 50, p.gapY);
+                    Rectangle bottomPipe = new Rectangle(p.x, p.gapY + gapHeight, 50, getHeight());
 
-                if (bird.intersects(topPipe) || bird.intersects(bottomPipe)) {
-                    timer.stop(); // Stop the game if the bird collides with a pipe
+                    if (bird.intersects(topPipe) || bird.intersects(bottomPipe)) {
+                        timer.stop(); // Stop the game if the bird collides with a pipe
 
-                    dieSound("diesounds/hitsound.wav");
-                    JOptionPane.showMessageDialog(this, "Game Over!");
-                    System.exit(0);
+                        dieSound("diesounds/hitsound.wav");
+                        JOptionPane.showMessageDialog(this, "Game Over!");
+                        System.exit(0);
+                    }
                 }
 
                 if (x < 0 || y < 0 || y + 30 > getHeight()) {
@@ -126,10 +139,11 @@ public class FlappyBird extends JFrame {
             // Draw bird
             g.drawImage(birdImage, x, y, 30, 30, this);
 
-            // Draw pipes
-            g.drawImage(pipeUpImage, pipeX, 0, 50, gapY, this); // Top pipe
-            g.drawImage(pipeDownImage, pipeX, gapY + gapHeight, 50, getHeight() - gapY - gapHeight, this); // Bottom
-                                                                                                           // pipe
+            // For loop to draw pipes
+            for (Pipe p : pipes) {
+                g.drawImage(pipeUpImage, p.x, 0, 50, p.gapY, this);
+                g.drawImage(pipeDownImage, p.x, p.gapY + gapHeight, 50, getHeight(), this);
+            }
 
             // Draw start message
             if (!isStarted) {
